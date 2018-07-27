@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# Used only in development environments, this leverages Docker to compile
+# the server binary into the 'bin' folder, without requiring the Golang
+# toolchain to be installed in the local system.
+# The first parameter must be the platform being compiled to. If omitted,
+# the current platform name will be assumed.
+#
+
+TARGET_SYSTEM=${1:-"$(uname | awk '{ print tolower($0) }')"} #' # This comment helps Sublime stop fucking up the whole syntax. Leave it there.
+echo "Building for $TARGET_SYSTEM"
+
+if [ -z ${PONOS_DO_COMPILE+x} ]; then
+    echo "Delegating to isolated container..."
+    docker run \
+    --rm \
+    -v "$PWD":/go/src/github.com/victorgama/ponos \
+    -w /go/src/github.com/victorgama/ponos \
+    -e PONOS_DO_COMPILE=yes \
+    golang:1.10.3 \
+    ./support/compile "$TARGET_SYSTEM"
+    exit 0
+fi
+
+echo "Fetching initial dependencies..."
+go get -u github.com/golang/dep/cmd/dep
+echo "Installing victorgama/ponos dependencies"
+dep ensure
+echo "Compiling victorgama/ponos"
+GOOS="$TARGET_SYSTEM" GOARCH=amd64 CGO_ENABLED=0 go build -v -o bin/ponos

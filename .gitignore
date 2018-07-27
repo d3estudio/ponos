@@ -1,0 +1,5 @@
+vendor/
+bin/
+.DS_Store
+.redis
+ponos.toml
